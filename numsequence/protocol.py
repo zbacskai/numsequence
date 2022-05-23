@@ -87,4 +87,10 @@ class ProtocolEncoder():
 
     def encode_message(self, writer, event):
         if event.type == EventType.ACKNOWLEDGE:
-            writer.write('ACK;'.encode('utf-8'))
+            writer.write('ACK;'.encode())
+        if event.type == EventType.NUMBERS:
+            print(f'NUMBERS: {event.numbers}')
+            numlist = ':'.join([str(e) for e in event.numbers])
+            writer.write(f'NUM,{numlist};'.encode())
+        if event.type == EventType.FINISH_ACKNOWLEDGED:
+            writer.write(f'FAC,{event.checksum}'.encode())

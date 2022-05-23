@@ -1,5 +1,6 @@
-from numsequence.events import EventType, AcknowledgeEvent
+from numsequence.events import EventType, AcknowledgeEvent, NumberEvent, FinishAcknowledged
 import random
+import hashlib
 SESSIONS = {}
 
 def cosntruct_messaeges(in_list, batch_size):
@@ -34,6 +35,15 @@ class SessionHandler():
     def handle_event(self, event):
         if event.type == EventType.INIT or event.type == EventType.CONTINUE:
             return AcknowledgeEvent()
+
+        if event.type == EventType.RECEIVE:
+            return NumberEvent(self.messages[event.message_index])
+
+        if event.type == EventType.FINISH:
+            chksum = hashlib.md5(f'{self.numbers}'.encode())
+            chksum = chksum.hexdigest()
+            print(f'{chksum}')
+            return FinishAcknowledged(chksum)
 
         return None
 

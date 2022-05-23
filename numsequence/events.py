@@ -15,6 +15,10 @@ class Event():
     def __init__(self, type):
         self.type = type
 
+class NumberEvent(Event):
+    def __init__(self, numbers):
+        super(NumberEvent, self).__init__(EventType.NUMBERS)
+        self.numbers = numbers
 
 class InitEvent(Event):
     def __init__(self, client_id, number_of_numbers, batch_size):
@@ -49,7 +53,7 @@ class FinishEvent(Event):
 class FinishAcknowledged(Event):
     def __init__(self, checksum):
         super(FinishAcknowledged, self).__init__(EventType.FINISH_ACKNOWLEDGED)
-        self.cheksum = checksum
+        self.checksum = checksum
 
 
 class ContinueEvent(Event):
