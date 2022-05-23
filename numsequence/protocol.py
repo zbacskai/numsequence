@@ -2,6 +2,7 @@ import io
 import sys
 import re
 from io import StringIO
+from numsequence.events import InitEvent, ReceiveEvent, FinishEvent, ContinueEvent, EventType
 
 
 class ProtocolEncodeException(Exception):
@@ -11,32 +12,49 @@ class ProtocolEncodeException(Exception):
 
 def init_decoder(remaining_msg):
     print(f'INIT received: {remaining_msg}')
+    msg_info = re.search(r'([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}),([0-9]+),([0-9]+)', remaining_msg)
+    if msg_info is None:
+        raise ProtocolEncodeException(f'Failed to decode {remaining_msg}')
+
+    client_id, number_of_numbers, batch_size = msg_info.group(1, 2, 3)
+    return InitEvent(client_id, int(number_of_numbers), int(batch_size))
 
 
 def request_transfer_decoder(remaining_msg):
-    print('TRANS received')
+    print('RECV received')
+    msg_info = re.search(r'([0-9]+)', remaining_msg)
+    if msg_info is None:
+        raise ProtocolEncodeException(f'Failed to decode {remaining_msg}')
 
-
-def next_batch_decoder(remaining_msg):
-    print('NEXT received')
+    next_message_index = msg_info.group(1)
+    return ReceiveEvent(int(next_message_index))
 
 
 def finish_operation_decoder(remaining_msg):
     print('FIN received')
+    return FinishEvent()
 
 
 def continue_transmit_decoder(remaining_msg):
     print('CONT_RECEIVED')
+    msg_info = re.search(
+        r'([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}),([0-9]+)',
+        remaining_msg)
+    if msg_info is None:
+        raise ProtocolEncodeException(f'Failed to decode {remaining_msg}')
+
+    client_id, next_mssage_index = msg_info.group(1, 2)
+    return ContinueEvent(client_id, next_mssage_index)
 
 
 def unknown_message_decoder(remaining_msg):
     print('Unknown message type')
+    return None
 
 
 MSG_DECODERS = {
     'INIT': init_decoder,
-    'TRANS': request_transfer_decoder,
-    'NXT': next_batch_decoder,
+    'RECV': request_transfer_decoder,
     'FIN': finish_operation_decoder,
     'CONT': continue_transmit_decoder,
 }
@@ -67,3 +85,6 @@ class ProtocolEncoder():
         full_message.seek(0)
         return self._decode_message(full_message.read())
 
+    def encode_message(self, writer, event):
+        if event.type == EventType.ACKNOWLEDGE:
+            writer.write('ACK;'.encode('utf-8'))
