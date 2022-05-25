@@ -22,15 +22,17 @@ async def handle_session(fut, reader, writer):
             session_processed = (reply.type == EventType.FINISH_ACKNOWLEDGED)
     except ProtocolEncodeException as pe:
         print(f'Protocol Encode Error {pe}')
-        traceback.print_exc()
     except SessionException as se:
         print(f'Session exception {se}')
+    except ConnectionResetError as ce:
+        print(f'Connection exception {ce}')
+    except Exception as ex:
+        print(f'Exception: {ex}')
         traceback.print_exc()
-    except Exception:
-        traceback.print_exc()
+    else:
+        fut.set_result("OK")
     finally:
         writer.close()
-        fut.set_result("OK")
 
 
 def handle_session_execution_exception(task, writer, message):

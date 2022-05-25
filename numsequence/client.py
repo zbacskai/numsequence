@@ -117,7 +117,7 @@ async def numsequence_client(fut, arguments):
                 calculate_and_validate_result(client_state)
     except Exception as e:
         print(f'ERROR: {e}')
-    finally:
+    else:
         fut.set_result(0)
 
 
