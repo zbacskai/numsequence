@@ -3,6 +3,7 @@ from numsequence.protocol import ProtocolEncoder, ProtocolEncodeException
 from numsequence.session import SessionHandlerFactory, SessionException
 from numsequence.events import EventType
 import traceback
+import uuid
 
 PROTOCOL_ENCODER = ProtocolEncoder()
 SESSION_HANDLER_FACTORY = SessionHandlerFactory()
@@ -10,47 +11,48 @@ SESSION_HANDLER_FACTORY = SessionHandlerFactory()
 SESSION_TIMEOUT = 1
 
 async def handle_session(fut, reader, writer):
-    session_handler = None
     try:
         session_processed = False
-        # Change this for the FAC message
+        session_handler = None
         while not session_processed:
             event = await PROTOCOL_ENCODER.decode_stream(reader)
-            if session_handler is None:
-                print('Here')
-                session_handler = SESSION_HANDLER_FACTORY.get_session(event)
-
+            session_handler = SESSION_HANDLER_FACTORY.get_session(event) if session_handler is None else session_handler
             reply = session_handler.handle_event(event)
             PROTOCOL_ENCODER.encode_message(writer, reply)
-            if reply.type == EventType.FINISH_ACKNOWLEDGED:
-                print('END')
-                writer.close()
-                session_processed = True
+            session_processed = (reply.type == EventType.FINISH_ACKNOWLEDGED)
     except ProtocolEncodeException as pe:
         print(f'Protocol Encode Error {pe}')
+        traceback.print_exc()
     except SessionException as se:
-        print(f'Protocol Encode Error {se}')
+        print(f'Session exception {se}')
+        traceback.print_exc()
     except Exception:
         traceback.print_exc()
-    print('Session done')
-    fut.set_result("OK")
+    finally:
+        writer.close()
+        fut.set_result("OK")
 
+
+def handle_session_execution_exception(task, writer, message):
+    task.cancel()
+    writer.close()
+    print(message)
 
 async def handle_connection(reader, writer):
     loop = asyncio.get_running_loop()
     fut = loop.create_future()
     task = loop.create_task(handle_session(fut, reader, writer))
 
+    session_id = uuid.uuid4()
+    print(f'Session {session_id} has started')
     try:
         await asyncio.wait_for(fut, timeout=SESSION_TIMEOUT)
     except asyncio.TimeoutError:
-        task.cancel()
-        writer.close()
+        handle_session_execution_exception(task, writer, f'Session {session_id} has finished (timeout')
     except asyncio.exceptions.InvalidStateError:
-        task.cancel()
-        writer.close()
-    finally:
-        print('Session processed')
+        handle_session_execution_exception(task, writer, f'Session {session_id} has finished (connection invalid state')
+    else:
+        print(f'Session {session_id} has finished')
 
 
 async def main():

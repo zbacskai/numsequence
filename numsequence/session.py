@@ -1,13 +1,14 @@
 from numsequence.events import EventType, AcknowledgeEvent, NumberEvent, FinishAcknowledged
 import random
 import hashlib
+
 SESSIONS = {}
 
-def cosntruct_messaeges(in_list, batch_size):
+
+def construct_messaeges(in_list, batch_size):
     counter = 0
     ret_list = []
     inner_list = []
-    print(batch_size)
     for x in in_list:
         if (counter % batch_size) == 0:
             if counter != 0:
@@ -22,15 +23,14 @@ def cosntruct_messaeges(in_list, batch_size):
 
     return ret_list
 
+
 class SessionHandler():
     def __init__(self, number_of_numbers, batch_size):
         print('-----')
         self.number_of_numbers = number_of_numbers
         self.batch_size = batch_size
         self.numbers = [random.randint(0, 100) for _ in range(0, number_of_numbers)]
-        self.messages = cosntruct_messaeges(self.numbers, self.batch_size)
-        print(f'{self.numbers}')
-        print(f'{self.messages}')
+        self.messages = construct_messaeges(self.numbers, self.batch_size)
 
     def handle_event(self, event):
         if event.type == EventType.INIT or event.type == EventType.CONTINUE:
@@ -42,7 +42,6 @@ class SessionHandler():
         if event.type == EventType.FINISH:
             chksum = hashlib.md5(f'{self.numbers}'.encode())
             chksum = chksum.hexdigest()
-            print(f'{chksum}')
             return FinishAcknowledged(chksum)
 
         return None
@@ -52,13 +51,13 @@ class SessionException(Exception):
     def __init__(self, msg):
         super(SessionException, self).__init__(msg)
 
+
 class SessionHandlerFactory():
     def __init__(self):
         pass
 
     def get_session(self, event):
         if event.type == EventType.INIT:
-            print('HERE')
             if event.client_id in SESSIONS:
                 raise SessionException(f'{event.client_id} already exist')
 

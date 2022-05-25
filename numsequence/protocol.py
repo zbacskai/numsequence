@@ -21,7 +21,7 @@ def init_decoder(remaining_msg):
 
 
 def request_transfer_decoder(remaining_msg):
-    print('RECV received')
+    print(f'RECV received {remaining_msg}')
     msg_info = re.search(r'([0-9]+)', remaining_msg)
     if msg_info is None:
         raise ProtocolEncodeException(f'Failed to decode {remaining_msg}')
@@ -31,12 +31,12 @@ def request_transfer_decoder(remaining_msg):
 
 
 def finish_operation_decoder(remaining_msg):
-    print('FIN received')
+    print(f'FIN received {remaining_msg}')
     return FinishEvent()
 
 
 def continue_transmit_decoder(remaining_msg):
-    print('CONT_RECEIVED')
+    print(f'CONT_RECEIVED {remaining_msg}')
     msg_info = re.search(
         r'([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})',
         remaining_msg)
@@ -48,7 +48,7 @@ def continue_transmit_decoder(remaining_msg):
 
 
 def unknown_message_decoder(remaining_msg):
-    print('Unknown message type')
+    print(f'Unknown message type {remaining_msg}')
     return None
 
 
@@ -89,7 +89,6 @@ class ProtocolEncoder():
         if event.type == EventType.ACKNOWLEDGE:
             writer.write('ACK;'.encode())
         if event.type == EventType.NUMBERS:
-            print(f'NUMBERS: {event.numbers}')
             numlist = ':'.join([str(e) for e in event.numbers])
             writer.write(f'NUM,{numlist};'.encode())
         if event.type == EventType.FINISH_ACKNOWLEDGED:
