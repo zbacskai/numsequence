@@ -5,7 +5,7 @@ SESSIONS = {}
 
 def cosntruct_messaeges(in_list, batch_size):
     counter = 0
-    ret_list = [];
+    ret_list = []
     inner_list = []
     print(batch_size)
     for x in in_list:

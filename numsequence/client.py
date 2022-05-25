@@ -4,6 +4,7 @@ import argparse
 import shelve
 import re
 import math
+import hashlib
 
 BATCH_SIZE = 5.0
 
@@ -61,7 +62,7 @@ def decode_numbers(numbers_msg, client_state_numbers, index):
     if msg_info is None:
         raise Exception(f'Failed to decode {numbers_msg}')
 
-    client_state_numbers.setdefault(index, msg_info.group(1).split(':'))
+    client_state_numbers.setdefault(index, [int(x) for x in msg_info.group(1).split(':')])
 
 async def read_all_numbers(reader, writer, client_state):
     number_of_messages = int(math.ceil(float(client_state['number-of-messages'])/float(client_state['batch-size'])))
@@ -75,6 +76,18 @@ async def read_all_numbers(reader, writer, client_state):
 
     client_state['numbers'] = client_state_numbers
 
+def calculate_and_validate_result(client_state):
+    all_nums = []
+    for _, batch_of_numbers in client_state['numbers'].items():
+        all_nums.extend(batch_of_numbers)
+    print(f'The SUM of numbers is: {sum(all_nums)}')
+    chksum = hashlib.md5(f'{all_nums}'.encode())
+    chksum = chksum.hexdigest()
+    if chksum == client_state['checksum']:
+        print(f'Checksum ({chksum}) is valid!')
+    else:
+        print(f'Checksum calculated({chksum}) does not match received ({client_state["checksum"]})')
+
 async def numsequence_client(fut, arguments):
     is_continue = arguments.command == 'CONTINUE'
     try:
@@ -86,11 +99,11 @@ async def numsequence_client(fut, arguments):
             if await init_dialogue(writer, reader, client_id, arguments, client_state):
                 await read_all_numbers(reader, writer, client_state)
                 client_state['checksum'] = await finish_dialogue(reader, writer)
-
-            print(f'{client_state["numbers"]}')
-            fut.set_result(0)
+                calculate_and_validate_result(client_state)
     except Exception as e:
         print(f'Exception {e}')
+    finally:
+        fut.set_result(0)
 
 async def numsequence_client_worker(arguments):
     loop = asyncio.get_running_loop()
