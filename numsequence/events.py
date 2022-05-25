@@ -9,16 +9,25 @@ class EventType(Enum):
     FINISH = 5
     FINISH_ACKNOWLEDGED = 6
     CONTINUE = 7
+    ERROR = 8
 
 
 class Event():
     def __init__(self, type):
         self.type = type
 
+
+class ErrorEvent(Event):
+    def __init__(self, error_msg):
+        super(ErrorEvent, self).__init__(EventType.ERROR)
+        self.error_msg = error_msg
+
+
 class NumberEvent(Event):
     def __init__(self, numbers):
         super(NumberEvent, self).__init__(EventType.NUMBERS)
         self.numbers = numbers
+
 
 class InitEvent(Event):
     def __init__(self, client_id, number_of_numbers, batch_size):

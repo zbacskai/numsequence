@@ -2,7 +2,7 @@ import asyncio
 from numsequence.protocol import ProtocolEncoder, ProtocolEncodeException
 from numsequence.session import SessionHandlerFactory, SessionException
 from numsequence.session_storage import SessionStorage
-from numsequence.events import EventType
+from numsequence.events import EventType, ErrorEvent
 import traceback
 import uuid
 import argparse
@@ -24,7 +24,8 @@ async def handle_session(fut, reader, writer, server):
     except ProtocolEncodeException as pe:
         print(f'Protocol Encode Error {pe}')
     except SessionException as se:
-        print(f'Session exception {se}')
+        print(f'Session exception !{se}')
+        server.protocol_encoder.encode_message(writer, ErrorEvent(f'{se}'))
     except ConnectionResetError as ce:
         print(f'Connection exception {ce}')
     except Exception as ex:

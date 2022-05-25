@@ -86,6 +86,7 @@ class ProtocolEncoder():
         return self._decode_message(full_message.read())
 
     def encode_message(self, writer, event):
+        print("BACSEK")
         if event.type == EventType.ACKNOWLEDGE:
             writer.write('ACK;'.encode())
         if event.type == EventType.NUMBERS:
@@ -93,3 +94,6 @@ class ProtocolEncoder():
             writer.write(f'NUM,{numlist};'.encode())
         if event.type == EventType.FINISH_ACKNOWLEDGED:
             writer.write(f'FAC,{event.checksum};'.encode())
+        if event.type == EventType.ERROR:
+            print("BACSEK")
+            writer.write(f'ERR,{event.error_msg};'.encode())

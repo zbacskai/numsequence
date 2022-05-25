@@ -70,7 +70,7 @@ class SessionHandlerFactory():
         elif event.type == EventType.CONTINUE:
             session_handler = self._session_storage.get(event.client_id)
             if session_handler is None:
-                raise SessionException(f'{event.client_id} does not exist in store')
+                raise SessionException(f'Client-id: {event.client_id} does not exist')
             return session_handler
 
         raise SessionException(f'Invalid Event Type: {event.type}')
