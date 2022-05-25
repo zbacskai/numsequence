@@ -1,11 +1,12 @@
+import argparse
 import asyncio
-from numsequence.protocol import ProtocolEncoder, ProtocolEncodeException
-from numsequence.session import SessionHandlerFactory, SessionException
-from numsequence.session_storage import SessionStorage
-from numsequence.events import EventType, ErrorEvent
 import traceback
 import uuid
-import argparse
+
+from numsequence.events import ErrorEvent, EventType
+from numsequence.protocol import ProtocolEncodeException, ProtocolEncoder
+from numsequence.session import SessionException, SessionHandlerFactory
+from numsequence.session_storage import SessionStorage
 
 SESSION_TIMEOUT = 1
 
@@ -16,20 +17,23 @@ async def handle_session(fut, reader, writer, server):
         session_handler = None
         while not session_processed:
             event = await server.protocol_encoder.decode_stream(reader)
-            session_handler = server.session_handler_factory.get_session_handler(
-                event) if session_handler is None else session_handler
+            session_handler = (
+                server.session_handler_factory.get_session_handler(event)
+                if session_handler is None
+                else session_handler
+            )
             reply = session_handler.handle_event(event)
             server.protocol_encoder.encode_message(writer, reply)
-            session_processed = (reply.type == EventType.FINISH_ACKNOWLEDGED)
+            session_processed = reply.type == EventType.FINISH_ACKNOWLEDGED
     except ProtocolEncodeException as pe:
-        print(f'Protocol Encode Error {pe}')
+        print(f"Protocol Encode Error {pe}")
     except SessionException as se:
-        print(f'Session exception !{se}')
-        server.protocol_encoder.encode_message(writer, ErrorEvent(f'{se}'))
+        print(f"Session exception !{se}")
+        server.protocol_encoder.encode_message(writer, ErrorEvent(f"{se}"))
     except ConnectionResetError as ce:
-        print(f'Connection exception {ce}')
+        print(f"Connection exception {ce}")
     except Exception as ex:
-        print(f'Exception: {ex}')
+        print(f"Exception: {ex}")
         traceback.print_exc()
     else:
         fut.set_result("OK")
@@ -54,28 +58,35 @@ class Server:
         task = loop.create_task(handle_session(fut, reader, writer, self))
 
         session_id = uuid.uuid4()
-        print(f'Session {session_id} has started')
+        print(f"Session {session_id} has started")
         try:
             await asyncio.wait_for(fut, timeout=SESSION_TIMEOUT)
         except asyncio.TimeoutError:
-            handle_session_execution_exception(task, writer, f'Session {session_id} has finished (timeout')
+            handle_session_execution_exception(
+                task, writer, f"Session {session_id} has finished (timeout"
+            )
         except asyncio.exceptions.InvalidStateError:
-            handle_session_execution_exception(task, writer,
-                                               f'Session {session_id} has finished (connection invalid state')
+            handle_session_execution_exception(
+                task,
+                writer,
+                f"Session {session_id} has finished (connection invalid state",
+            )
         else:
-            print(f'Session {session_id} has finished')
+            print(f"Session {session_id} has finished")
 
 
 async def main(arguments):
     server = Server()
-    server = await asyncio.start_server(server.handle_connection, '127.0.0.1', arguments.port)
+    server = await asyncio.start_server(
+        server.handle_connection, "127.0.0.1", arguments.port
+    )
 
     async with server:
         await server.serve_forever()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('port', help='The port to listen on localhost', type=int)
+    parser.add_argument("port", help="The port to listen on localhost", type=int)
     arguments = parser.parse_args()
     asyncio.run(main(arguments))

@@ -10,7 +10,9 @@ async def maintain_sessions(session_storage):
                 print(f"Purging client info for: {key}")
                 del session_storage.obj_store[key]
 
-        session_storage.expiries = [ x for x in session_storage.expiries if x[0] > current_time ]
+        session_storage.expiries = [
+            x for x in session_storage.expiries if x[0] > current_time
+        ]
 
         await asyncio.sleep(1)
 
@@ -27,7 +29,12 @@ class SessionStorage:
             self.obj_store[key] = in_object
         if exp >= 0:
             expiry_date = datetime.now() + timedelta(seconds=exp)
-            self.expiries.append((expiry_date, key,))
+            self.expiries.append(
+                (
+                    expiry_date,
+                    key,
+                )
+            )
 
     def get(self, key):
         return self.obj_store.get(key)

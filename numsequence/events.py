@@ -12,7 +12,7 @@ class EventType(Enum):
     ERROR = 8
 
 
-class Event():
+class Event:
     def __init__(self, type):
         self.type = type
 

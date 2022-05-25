@@ -1,10 +1,18 @@
-from numsequence.events import EventType, AcknowledgeEvent, NumberEvent, FinishAcknowledged
-import random
 import hashlib
 import os
+import random
 
-TEST_MODE = os.environ.get('TEST_MODE') is not None
+from numsequence.events import (
+    AcknowledgeEvent,
+    ErrorEvent,
+    EventType,
+    FinishAcknowledged,
+    NumberEvent,
+)
+
+TEST_MODE = os.environ.get("TEST_MODE") is not None
 CLIENT_INFORMATION_TIMEOUT_SEC = 30
+
 
 def construct_messaeges(in_list, batch_size):
     counter = 0
@@ -25,7 +33,7 @@ def construct_messaeges(in_list, batch_size):
     return ret_list
 
 
-class SessionHandler():
+class SessionHandler:
     def __init__(self, number_of_numbers, batch_size, client_id):
         self.number_of_numbers = number_of_numbers
         self.batch_size = batch_size
@@ -39,10 +47,13 @@ class SessionHandler():
             return AcknowledgeEvent()
 
         if event.type == EventType.RECEIVE:
-            return NumberEvent(self.messages[event.message_index])
+            if event.message_index >= 0 and event.message_index < len(self.messages):
+                return NumberEvent(self.messages[event.message_index])
+
+            return ErrorEvent(f"Invalid batch index requested: {event.message_index}")
 
         if event.type == EventType.FINISH:
-            chksum = hashlib.md5(f'{self.numbers}'.encode())
+            chksum = hashlib.md5(f"{self.numbers}".encode())
             chksum = chksum.hexdigest()
             return FinishAcknowledged(chksum)
 
@@ -54,23 +65,27 @@ class SessionException(Exception):
         super(SessionException, self).__init__(msg)
 
 
-class SessionHandlerFactory():
+class SessionHandlerFactory:
     def __init__(self, session_sorage):
         self._session_storage = session_sorage
 
     def get_session_handler(self, event):
         if event.type == EventType.INIT:
             if self._session_storage.get(event.client_id) is not None:
-                raise SessionException(f'{event.client_id} already exist')
+                raise SessionException(f"{event.client_id} already exist")
 
-            session_handler = SessionHandler(event.number_of_numbers, event.batch_size, event.client_id)
-            self._session_storage.set(event.client_id, session_handler, CLIENT_INFORMATION_TIMEOUT_SEC)
+            session_handler = SessionHandler(
+                event.number_of_numbers, event.batch_size, event.client_id
+            )
+            self._session_storage.set(
+                event.client_id, session_handler, CLIENT_INFORMATION_TIMEOUT_SEC
+            )
             return session_handler
 
         elif event.type == EventType.CONTINUE:
             session_handler = self._session_storage.get(event.client_id)
             if session_handler is None:
-                raise SessionException(f'Client-id: {event.client_id} does not exist')
+                raise SessionException(f"Client-id: {event.client_id} does not exist")
             return session_handler
 
-        raise SessionException(f'Invalid Event Type: {event.type}')
+        raise SessionException(f"Invalid Event Type: {event.type}")
