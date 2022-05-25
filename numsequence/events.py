@@ -57,7 +57,6 @@ class FinishAcknowledged(Event):
 
 
 class ContinueEvent(Event):
-    def __init__(self, client_id, message_index):
-        super(ContinueEvent, self).__init__()
+    def __init__(self, client_id):
+        super(ContinueEvent, self).__init__(EventType.CONTINUE)
         self.client_id = client_id
-        self.message_index = message_index

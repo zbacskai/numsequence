@@ -7,7 +7,7 @@ import traceback
 PROTOCOL_ENCODER = ProtocolEncoder()
 SESSION_HANDLER_FACTORY = SessionHandlerFactory()
 
-SESSION_TIMEOUT = 600
+SESSION_TIMEOUT = 1
 
 async def handle_session(fut, reader, writer):
     session_handler = None

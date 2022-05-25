@@ -68,6 +68,6 @@ class SessionHandlerFactory():
         elif event.type == EventType.CONTINUE:
             if event.client_id not in SESSIONS:
                 raise SessionException(f'{event.client_id} does not exist in store')
-            return SESSIONS[event.event.client_id]
+            return SESSIONS[event.client_id]
 
         raise SessionException(f'Invalid Event Type: {event.type}')

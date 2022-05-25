@@ -38,13 +38,13 @@ def finish_operation_decoder(remaining_msg):
 def continue_transmit_decoder(remaining_msg):
     print('CONT_RECEIVED')
     msg_info = re.search(
-        r'([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}),([0-9]+)',
+        r'([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})',
         remaining_msg)
     if msg_info is None:
         raise ProtocolEncodeException(f'Failed to decode {remaining_msg}')
 
-    client_id, next_mssage_index = msg_info.group(1, 2)
-    return ContinueEvent(client_id, next_mssage_index)
+    client_id = msg_info.group(1)
+    return ContinueEvent(client_id)
 
 
 def unknown_message_decoder(remaining_msg):
@@ -93,4 +93,4 @@ class ProtocolEncoder():
             numlist = ':'.join([str(e) for e in event.numbers])
             writer.write(f'NUM,{numlist};'.encode())
         if event.type == EventType.FINISH_ACKNOWLEDGED:
-            writer.write(f'FAC,{event.checksum}'.encode())
+            writer.write(f'FAC,{event.checksum};'.encode())
