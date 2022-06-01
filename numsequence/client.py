@@ -23,7 +23,7 @@ async def read_message(reader):
 
 
 def get_client_id(shelve_obj, arguments):
-    if "client_id" in arguments:
+    if "client_id" in arguments and arguments.client_id is not None:
         return arguments.client_id
 
     if arguments.command == "CONTINUE" and "client-id" in shelve_obj:
